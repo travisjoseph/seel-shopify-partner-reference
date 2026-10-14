@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seel WFD Widget Demo</title>
+  <link rel="stylesheet" href="../extension/seel-wfd/assets/seel-wfd.css">
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; color: #1a1a1a; background: #fafafa; }
+    h1 { font-size: 1.3rem; }
+    .scenarios { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 20px; }
+    .scenarios button { padding: 6px 10px; border: 1px solid #bbb; border-radius: 6px; background: #fff; cursor: pointer; }
+    .scenarios button[aria-pressed="true"] { background: #111; color: #fff; border-color: #111; }
+    .cart { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px; }
+    .status { font-family: ui-monospace, monospace; font-size: 0.85rem; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; margin-top: 16px; white-space: pre-wrap; }
+    .checkout { width: 100%; padding: 12px; border: 0; border-radius: 8px; background: #111; color: #fff; font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Seel Worry-Free Delivery widget, offline demo</h1>
+  <p>Mocks <code>/cart.js</code>, <code>/cart/update.js</code>, the partner quote proxy and the net price ladder. Pick a scenario; it fires a theme-style cart write, which the widget observes and re-quotes on.</p>
+
+  <div class="scenarios" role="group" aria-label="Scenario">
+    <button type="button" data-scenario="accepted">Accepted, exact match</button>
+    <button type="button" data-scenario="no_match">Accepted, no variant match</button>
+    <button type="button" data-scenario="rejected">Rejected</button>
+    <button type="button" data-scenario="currency">Unsupported currency</button>
+  </div>
+
+  <div class="cart">
+    <div>Snowboard wax x1, $24.95</div>
+    <button type="button" class="checkout" name="checkout">Check out</button>
+  </div>
+
+  <div class="status">State: <strong id="state-name" data-state>idle</strong>
+<span id="cart-view"></span></div>
+
+  <script>
+    (function () {
+      var QUOTE = {
+        quote_id: '2026101400000000000000000001',
+        status: 'accepted',
+        price: '1.49',
+        currency_code: 'USD',
+        display_amounts: null,
+        extra_info: {
+          widget_title: 'Worry-Free Delivery',
+          display_widget_text: ["Get a full refund if the order doesn't arrive as described, including loss and damage in transit"],
+          coverage_details_text: ['Lost in transit', 'Item damaged in transit', 'Package stolen or missing after delivery'],
+          opt_out_warning_text: 'No protection: lost or damaged packages may not be covered',
+          terms_url: 'https://www.seel.com/terms/worry-free-purchase',
+          privacy_policy_url: 'www.seel.com/privacy'
+        }
+      };
+      var SCENARIOS = {
+        accepted: { currency: 'USD', quote: QUOTE },
+        no_match: { currency: 'USD', quote: Object.assign({}, QUOTE, { price: '1.23' }) },
+        rejected: { currency: 'USD', quote: Object.assign({}, QUOTE, { status: 'rejected' }) },
+        currency: { currency: 'JPY', quote: QUOTE }
+      };
+      var scenario = SCENARIOS.accepted;
+
+      var cart = {
+        token: 'demo-cart',
+        currency: 'USD',
+        attributes: {},
+        items: [{ variant_id: 501, sku: 'WAX-01', handle: 'snowboard-wax', quantity: 1, price: 2495, final_line_price: 2495 }]
+      };
+      window.demo = { lastQuoteRequest: null, cart: cart };
+
+      function json(body, status) {
+        return Promise.resolve(new Response(JSON.stringify(body), { status: status || 200, headers: { 'Content-Type': 'application/json' } }));
+      }
+
+      function applyUpdate(payload) {
+        Object.keys(payload.updates || {}).forEach(function (id) {
+          var qty = payload.updates[id];
+          var line = cart.items.find(function (i) { return String(i.variant_id) === id; });
+          if (line && qty === 0) cart.items.splice(cart.items.indexOf(line), 1);
+          else if (line) line.quantity = qty;
+          else if (qty > 0) cart.items.push({ variant_id: Number(id), sku: 'SEEL-WFD', handle: 'worry-free-delivery', quantity: qty });
+        });
+        Object.keys(payload.attributes || {}).forEach(function (k) {
+          if (payload.attributes[k] === '') delete cart.attributes[k];
+          else cart.attributes[k] = payload.attributes[k];
+        });
+      }
+
+      window.fetch = function (input, init) {
+        var url = String(typeof input === 'string' ? input : input.url);
+        if (url === '/cart.js' || url.indexOf('/cart/change.js') === 0) return json(JSON.parse(JSON.stringify(cart)));
+        if (url.indexOf('/cart/update.js') === 0) {
+          applyUpdate(JSON.parse(init.body));
+          renderCart();
+          return json(JSON.parse(JSON.stringify(cart)));
+        }
+        if (url === 'https://partner.example/seel/quotes') {
+          window.demo.lastQuoteRequest = JSON.parse(init.body);
+          return json(scenario.quote);
+        }
+        return json({ message: 'not mocked: ' + url }, 404);
+      };
+
+      function renderCart() {
+        var wfd = cart.items.filter(function (i) { return i.sku === 'SEEL-WFD'; });
+        document.getElementById('cart-view').textContent =
+          'Cart currency: ' + cart.currency +
+          '\nWFD lines: ' + (wfd.length ? wfd.map(function (i) { return i.variant_id + ' x' + i.quantity; }).join(', ') : 'none') +
+          '\nwfp_quote_id: ' + (cart.attributes.wfp_quote_id || '(unset)');
+      }
+
+      document.addEventListener('seel-wfd:state', function (e) {
+        var s = e.detail;
+        var el = document.getElementById('state-name');
+        el.textContent = s.name + (s.reason ? ' (' + s.reason + ')' : '') + (s.message ? ' (' + s.message + ')' : '');
+        el.setAttribute('data-state', s.name);
+        el.setAttribute('data-reason', s.reason || '');
+        renderCart();
+      });
+
+      document.querySelectorAll('[data-scenario]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          scenario = SCENARIOS[btn.dataset.scenario];
+          cart.currency = scenario.currency;
+          document.querySelectorAll('[data-scenario]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+          fetch('/cart/change.js', { method: 'POST', body: '{}' });
+        });
+      });
+      document.querySelector('[data-scenario="accepted"]').setAttribute('aria-pressed', 'true');
+    })();
+  </script>
+
+  <script type="application/json" id="seel-wfd-config">
+    {
+      "quoteEndpoint": "https://partner.example/seel/quotes",
+      "serviceType": "acme_shopify-wfp",
+      "adminDomain": "acme-demo.myshopify.com",
+      "wfdProductHandle": "worry-free-delivery",
+      "wfdSku": "SEEL-WFD",
+      "wfdVariantIds": [1001, 1002, 1003],
+      "netPriceLadder": { "USD": { "1001": 99, "1002": 149, "1003": 199 }, "EUR": { "1001": 92, "1002": 138, "1003": 184 } },
+      "pricesIncludeTax": false,
+      "defaultOn": false,
+      "anchorSelector": "",
+      "debug": true,
+      "i18n": { "title": "Worry-Free Delivery", "coverage": "What's covered", "learnMore": "Learn more", "privacy": "Privacy policy" }
+    }
+  </script>
+  <script src="../extension/seel-wfd/assets/seel-wfd-core.js"></script>
+  <script src="../extension/seel-wfd/assets/seel-wfd.js"></script>
+</body>
+</html>

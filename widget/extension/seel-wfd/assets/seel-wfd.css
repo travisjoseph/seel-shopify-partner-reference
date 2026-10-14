@@ -1,0 +1,105 @@
+/*
+ * Seel Worry-Free Delivery widget baseline styles. Theme-neutral; override
+ * the custom properties to restyle. "Powered by Seel" must stay visible.
+ */
+
+.seel-wfd {
+  box-sizing: border-box;
+  margin: 12px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--seel-wfd-border, #e3e3e3);
+  border-radius: var(--seel-wfd-radius, 10px);
+  background: var(--seel-wfd-bg, #fff);
+  font-family: inherit;
+  color: inherit;
+}
+
+.seel-wfd--busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.seel-wfd__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.seel-wfd__checkbox {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--seel-wfd-accent, #111);
+  cursor: pointer;
+}
+
+.seel-wfd__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.seel-wfd__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.seel-wfd__points,
+.seel-wfd__coverage-list {
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  opacity: 0.8;
+}
+
+.seel-wfd__price {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.seel-wfd__coverage,
+.seel-wfd__warning {
+  margin: 8px 0 0 30px;
+  font-size: 0.8rem;
+}
+
+.seel-wfd__coverage summary {
+  cursor: pointer;
+}
+
+.seel-wfd__warning {
+  color: var(--seel-wfd-warning, #8a4b00);
+}
+
+.seel-wfd__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 8px;
+  padding-left: 30px;
+}
+
+.seel-wfd__link {
+  font-size: 0.75rem;
+  text-decoration: underline;
+  color: inherit;
+  opacity: 0.8;
+}
+
+.seel-wfd__powered {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  opacity: 0.6;
+  margin-left: auto;
+}
