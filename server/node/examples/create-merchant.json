@@ -1,0 +1,25 @@
+{
+  "channel_id": "acme",
+  "platform": "shopify",
+  "shop_id": "acme-demo-shop-001",
+  "admin_domain": "acme-demo.myshopify.com",
+  "shop_domain": "acme-demo.myshopify.com",
+  "shop_platform": "shopify",
+  "shop_currency": "USD",
+  "shop_name": "Acme Demo Shop",
+  "contact_name": "Jane Merchant",
+  "contact_email": "owner@acme-demo.example",
+  "contact_phone_number": "+15555550100",
+  "support_email": "support@acme-demo.example",
+  "seel_services": [
+    {
+      "type": "acme_shopify-wfp",
+      "is_default_on": true,
+      "is_enabled": true,
+      "coverages": [{ "type": "gdd" }]
+    }
+  ],
+  "extra_info": {
+    "return_portal_url": "https://returns.acme-demo.example"
+  }
+}
