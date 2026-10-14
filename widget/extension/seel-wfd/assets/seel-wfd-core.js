@@ -133,6 +133,23 @@
     return count ? ladder : null;
   }
 
+  /**
+   * Keep only ladder entries for variants the WFD product still has, so a
+   * stale ladder can never add a deleted variant. An empty id list keeps all.
+   */
+  function restrictLadder(ladder, variantIds) {
+    if (!ladder || !Array.isArray(variantIds) || !variantIds.length) return ladder;
+    var known = variantIds.map(String);
+    var raw = {};
+    Object.keys(ladder).forEach(function (currency) {
+      raw[currency] = {};
+      Object.keys(ladder[currency]).forEach(function (id) {
+        if (known.indexOf(id) !== -1) raw[currency][id] = ladder[currency][id];
+      });
+    });
+    return parseLadder(raw);
+  }
+
   /** /products/{handle}.js variants (cents, presentment currency) as a price table. */
   function priceTableFromVariants(variants) {
     if (!Array.isArray(variants)) return null;
@@ -301,6 +318,7 @@
     initialState: initialState,
     transition: transition,
     parseLadder: parseLadder,
+    restrictLadder: restrictLadder,
     priceTableFromVariants: priceTableFromVariants,
     selectPriceSource: selectPriceSource,
     matchVariant: matchVariant,

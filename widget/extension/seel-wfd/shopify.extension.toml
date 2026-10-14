@@ -1,0 +1,9 @@
+# Seel Worry-Free Delivery theme app extension.
+# Copy this directory into your app's extensions/ folder and run `shopify app deploy`.
+
+api_version = "2025-01"
+
+[[extensions]]
+type = "theme"
+name = "Seel Worry-Free Delivery"
+handle = "seel-wfd"

@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   parseLadder,
+  restrictLadder,
   priceTableFromVariants,
   selectPriceSource,
   HIDDEN_REASONS,
@@ -53,4 +54,11 @@ test('product.js variants become a price table keyed by variant id', () => {
     44000000000001: 99,
     44000000000002: 149,
   });
+});
+
+test('ladder entries for variants the product no longer has are dropped', () => {
+  const ladder = parseLadder(METAFIELD);
+  assert.deepEqual(restrictLadder(ladder, [44000000000002]), { USD: { 44000000000002: 149 }, EUR: { 44000000000002: 138 } });
+  assert.equal(restrictLadder(ladder, [1]), null);
+  assert.equal(restrictLadder(ladder, []), ladder);
 });

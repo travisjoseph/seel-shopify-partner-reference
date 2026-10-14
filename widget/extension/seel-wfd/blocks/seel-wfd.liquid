@@ -1,0 +1,115 @@
+{% comment %}
+  Seel Worry-Free Delivery cart widget.
+
+  Renders only a JSON config element and the assets. seel-wfd.js builds the
+  widget client-side because the quote depends on the live cart.
+
+  The net price ladder is the WFD product's `seel.net_price_ladder` JSON
+  metafield: { "<ISO currency>": { "<variant_id>": <net price in cents> } }.
+{% endcomment %}
+
+{%- liquid
+  assign wfd_product = all_products[block.settings.wfd_product_handle]
+  assign ladder = nil
+  assign variant_ids = ''
+  if wfd_product
+    assign ladder = wfd_product.metafields.seel.net_price_ladder.value
+    assign variant_ids = wfd_product.variants | map: 'id'
+  endif
+-%}
+
+<script type="application/json" id="seel-wfd-config">
+  {
+    "quoteEndpoint": {{ block.settings.quote_endpoint | json }},
+    "serviceType": {{ block.settings.service_type | json }},
+    "adminDomain": {{ shop.permanent_domain | json }},
+    "wfdProductHandle": {{ block.settings.wfd_product_handle | json }},
+    "wfdSku": {{ block.settings.wfd_sku | json }},
+    "wfdVariantIds": {% if wfd_product %}{{ variant_ids | json }}{% else %}[]{% endif %},
+    "netPriceLadder": {% if ladder != blank %}{{ ladder | json }}{% else %}null{% endif %},
+    "pricesIncludeTax": {{ block.settings.prices_include_tax | json }},
+    "defaultOn": {{ block.settings.default_on | json }},
+    "anchorSelector": {{ block.settings.anchor_selector | json }},
+    "debug": {{ block.settings.debug | json }},
+    "i18n": {
+      "title": {{ 'seel_wfd.title' | t | json }},
+      "coverage": {{ 'seel_wfd.coverage' | t | json }},
+      "learnMore": {{ 'seel_wfd.learn_more' | t | json }},
+      "privacy": {{ 'seel_wfd.privacy' | t | json }}
+    }
+  }
+</script>
+
+{{ 'seel-wfd.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'seel-wfd-core.js' | asset_url }}" defer></script>
+<script src="{{ 'seel-wfd.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Seel Worry-Free Delivery",
+  "target": "body",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Quote"
+    },
+    {
+      "type": "url",
+      "id": "quote_endpoint",
+      "label": "Quote endpoint",
+      "info": "Your app's quote proxy URL. It adds the Seel API key and browser_ip server-side. The widget stays hidden while this is blank."
+    },
+    {
+      "type": "text",
+      "id": "service_type",
+      "label": "Service type",
+      "info": "Required. The quote type Seel issued for your app, for example acme_shopify-wfp."
+    },
+    {
+      "type": "header",
+      "content": "Worry-Free Delivery product"
+    },
+    {
+      "type": "text",
+      "id": "wfd_product_handle",
+      "label": "WFD product handle",
+      "default": "worry-free-delivery"
+    },
+    {
+      "type": "text",
+      "id": "wfd_sku",
+      "label": "WFD SKU",
+      "info": "Identifies WFD lines in the cart. Leave blank only if the WFD variants have no SKU; the product handle is used instead."
+    },
+    {
+      "type": "checkbox",
+      "id": "prices_include_tax",
+      "label": "Store prices include tax",
+      "default": false,
+      "info": "Turn on for tax-inclusive stores. The widget then requires the seel.net_price_ladder metafield and never matches against storefront prices."
+    },
+    {
+      "type": "header",
+      "content": "Behaviour"
+    },
+    {
+      "type": "checkbox",
+      "id": "default_on",
+      "label": "Opt shoppers in by default",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "anchor_selector",
+      "label": "Anchor selector",
+      "info": "CSS selector the widget is inserted before. Blank uses the cart checkout button."
+    },
+    {
+      "type": "checkbox",
+      "id": "debug",
+      "label": "Verbose console logging",
+      "default": false
+    }
+  ]
+}
+{% endschema %}
